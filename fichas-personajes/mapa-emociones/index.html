@@ -3,47 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f8faf7">
+  <meta name="theme-color" content="#ebebeb">
   <title>Mapa de emociones | ARTEV TOOLS</title>
   <style>
-    :root { --accent:#598d4f; --ink:#39473d; --muted:#647168; }
+    :root { --accent:#598d4f; --ink:#39473d; --muted:#647168; --page-bg:#ebebeb; --frame-green:#679c65; }
     * { box-sizing:border-box; }
-    body { margin:0; background:#f8faf7; color:var(--ink); font-family:Arial,Helvetica,sans-serif; }
-    main { max-width:930px; margin:0 auto; padding:24px 12px 45px; }
+    body { margin:0; background:var(--page-bg); color:var(--ink); font-family:Arial,Helvetica,sans-serif; }
+    .page-frame {
+      position:relative;
+      isolation:isolate;
+      width:calc(100% - 60px);
+      max-width:1650px;
+      min-height:calc(100svh - 100px);
+      margin:30px auto 90px;
+      border:1px solid var(--frame-green);
+      background:var(--page-bg);
+      padding:42px 26px 115px;
+    }
+    .page-content { position:relative; z-index:2; max-width:930px; margin:0 auto; }
+    .plant-art {
+      position:absolute;
+      z-index:1;
+      left:-44px;
+      bottom:-86px;
+      width:clamp(195px,23vw,450px);
+      height:auto;
+      pointer-events:none;
+      user-select:none;
+    }
+    .social-credits {
+      position:absolute;
+      z-index:3;
+      right:18px;
+      bottom:24px;
+      color:#141414;
+      font-family:Georgia,'Times New Roman',serif;
+      font-style:italic;
+      font-size:clamp(13px,1.25vw,20px);
+      line-height:1.15;
+      text-align:right;
+      white-space:nowrap;
+    }
     h1 { margin:0; text-align:center; font-size:clamp(23px,4vw,32px); font-weight:700; letter-spacing:-.6px; }
     .hint { text-align:center; color:var(--muted); font-size:14px; margin:10px 0 0; }
-    .chart-wrap { margin:0 auto; max-width:850px; }
+    .chart-wrap { margin:0 auto; max-width:720px; }
     svg { display:block; width:100%; height:auto; overflow:visible; user-select:none; -webkit-user-select:none; }
-    .controls { max-width:620px; display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:13px; margin:0 auto; }
-    .color-control { display:flex; align-items:center; gap:12px; border:1px solid #d4ddd4; padding:10px 14px; background:#fff; border-radius:13px; font-size:14px; font-weight:600; }
+    .controls { max-width:720px; display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:10px; margin:0 auto; }
+    .color-control { display:flex; align-items:center; gap:12px; border:1px solid #cbd8cb; padding:8px 12px; background:#fff; border-radius:13px; font-size:14px; font-weight:600; }
     input[type=color] { border:0; width:40px; height:33px; padding:0; cursor:pointer; background:none; }
-    button { border:0; border-radius:13px; padding:15px 19px; background:#3a6d48; color:#fff; cursor:pointer; font-size:14px; font-weight:bold; }
+    button { border:0; border-radius:12px; padding:14px 17px; background:#3a6d48; color:#fff; cursor:pointer; font-size:14px; font-weight:bold; }
     button:hover { filter:brightness(1.08); }
     button:focus-visible,input:focus-visible { outline:3px solid #6eaa7d; outline-offset:3px; }
+    .download-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
     .note { color:var(--muted); text-align:center; margin:13px 0 0; font-size:12px; }
-    @media (max-width:480px) { main { padding-top:20px; } .hint { font-size:12px; } .color-control { font-size:13px; } }
+    .emotion-label { font-size:27px; }
+    .scale-label { font-size:23px; }
+    @media (max-width:700px) {
+      .page-frame { width:calc(100% - 28px); margin:18px auto 70px; padding:103px 6px 116px; min-height:calc(100svh - 90px); }
+      .social-credits { top:13px; bottom:auto; right:11px; font-size:clamp(12px,2.5vw,16px); }
+      .plant-art { left:-18px; bottom:-62px; width:clamp(115px,29vw,215px); }
+      h1 { font-size:clamp(21px,5vw,27px); }
+      .hint { font-size:12px; padding:0 8px; line-height:1.45; }
+      .emotion-label { font-size:34px; }
+      .scale-label { font-size:29px; }
+      .controls { gap:9px; flex-direction:column; }
+      .download-actions { gap:8px; }
+      .color-control { font-size:12px; padding:7px 10px; }
+      button { font-size:12px; padding:12px 13px; }
+      .note { font-size:11px; padding:0 7px; line-height:1.4; }
+    }
+    @media (max-width:360px) {
+      .page-frame { width:calc(100% - 18px); padding-left:3px; padding-right:3px; }
+      .plant-art { width:115px; }
+      button { padding:11px 9px; }
+    }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Mapa de emociones</h1>
-    <p class="hint">Arrastra los puntos del gráfico para ajustar la intensidad de cada emoción.</p>
-    <div class="chart-wrap">
-      <svg id="chart" viewBox="0 0 1000 1010" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa interactivo de diez emociones, con valores de cero a cien">
-        <g id="grid"></g>
-        <g id="shape"></g>
-        <g id="scale"></g>
-        <g id="handles"></g>
-        <g id="labels"></g>
-        <text x="500" y="998" text-anchor="middle" font-size="20" font-family="Arial, Helvetica, sans-serif" fill="#607267" letter-spacing="1.1">@artev.ren</text>
-      </svg>
+  <div class="page-frame">
+    <div class="social-credits" aria-label="Redes de la creadora">
+      <div>FB: Evren Seonwoo</div>
+      <div>IG: @artev.ren</div>
+      <div>ko-fi: artevren</div>
     </div>
-    <div class="controls">
-      <label class="color-control" for="color">Color del gráfico <input id="color" type="color" value="#598d4f" aria-label="Elegir color del gráfico"></label>
-      <button id="download" type="button">Descargar mapa PNG</button>
-    </div>
-    <p class="note">También puedes seleccionar un punto y usar las flechas del teclado.</p>
-  </main>
+    <img class="plant-art" src="assets/busto-hojas.png" alt="" aria-hidden="true" loading="eager">
+    <main class="page-content">
+      <h1>Mapa de emociones</h1>
+      <p class="hint">Arrastra los puntos del gráfico para ajustar la intensidad de cada emoción.</p>
+      <div class="chart-wrap">
+        <svg id="chart" viewBox="0 0 1000 1010" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa interactivo de diez emociones, con valores de cero a cien">
+          <g id="grid"></g>
+          <g id="shape"></g>
+          <g id="scale"></g>
+          <g id="handles"></g>
+          <g id="labels"></g>
+          <text x="500" y="998" text-anchor="middle" font-size="20" font-family="Arial, Helvetica, sans-serif" fill="#607267" letter-spacing="1.1">@artev.ren</text>
+        </svg>
+      </div>
+      <div class="controls">
+        <label class="color-control" for="color">Color del gráfico <input id="color" type="color" value="#598d4f" aria-label="Elegir color del gráfico"></label>
+        <div class="download-actions">
+          <button id="download-png" type="button">Descargar PNG</button>
+          <button id="download-jpg" type="button">Descargar JPG</button>
+        </div>
+      </div>
+      <p class="note">También puedes seleccionar un punto y usar las flechas del teclado. El JPG se guarda con fondo blanco.</p>
+    </main>
+  </div>
   <script>
   (() => {
     'use strict';
@@ -97,7 +163,7 @@
       }
       for(let n=1;n<=5;n++){
         const v=n*20;
-        el('text',{x:CX+12,y:CY-R*n/5+8,fill:'#465149','font-size':'23','font-family':'Arial, Helvetica, sans-serif','font-style':'italic'},scale).textContent=String(v);
+        el('text',{x:CX+12,y:CY-R*n/5+8,fill:'#465149','class':'scale-label','font-size':'23','font-family':'Arial, Helvetica, sans-serif','font-style':'italic'},scale).textContent=String(v);
       }
     }
     let polygon;
@@ -131,7 +197,7 @@
         const [x,y]=positions[i];
         const icon=el('g',{transform:`translate(${x-21},${y-21}) scale(1.75)`,fill:'none',stroke:'#627d66','stroke-width':'1.7','stroke-linecap':'round','stroke-linejoin':'round'},labels);
         icon.innerHTML=iconPaths[i];
-        el('text',{x,y:y+67,'text-anchor':'middle',fill:'#475149','font-size':'27','font-weight':'600','font-family':'Arial, Helvetica, sans-serif'},labels).textContent=name;
+        el('text',{x,y:y+67,'text-anchor':'middle',fill:'#475149','class':'emotion-label','font-size':'27','font-weight':'600','font-family':'Arial, Helvetica, sans-serif'},labels).textContent=name;
       });
     }
     function update() {
@@ -161,32 +227,49 @@
       svg.addEventListener(event,()=>{dragging=null;});
     }
     picker.addEventListener('input',e=>{color=e.target.value;update();});
-    document.querySelector('#download').addEventListener('click',()=>{
+    function downloadMap(format) {
       const copy=svg.cloneNode(true);
       copy.querySelectorAll('[data-hit]').forEach(node=>node.remove());
       copy.setAttribute('xmlns',NS);
-      copy.setAttribute('width','1000');copy.setAttribute('height','1010');
+      copy.setAttribute('width','1000');
+      copy.setAttribute('height','1010');
+      // Give exported text explicit sizing, independently of the site's CSS.
+      copy.querySelectorAll('.emotion-label').forEach(node=>node.setAttribute('font-size','27'));
+      copy.querySelectorAll('.scale-label').forEach(node=>node.setAttribute('font-size','23'));
       const xml=new XMLSerializer().serializeToString(copy);
       const blob=new Blob([xml],{type:'image/svg+xml;charset=utf-8'});
       const url=URL.createObjectURL(blob);
       const image=new Image();
       image.onload=()=>{
         const canvas=document.createElement('canvas');
-        canvas.width=2000;canvas.height=2020;
-        canvas.getContext('2d').drawImage(image,0,0,2000,2020);
+        canvas.width=2000;
+        canvas.height=2020;
+        const ctx=canvas.getContext('2d');
+        if(format==='jpeg') {
+          ctx.fillStyle='#ffffff';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+        }
+        ctx.drawImage(image,0,0,canvas.width,canvas.height);
         URL.revokeObjectURL(url);
-        canvas.toBlob(png=>{
-          if(!png){alert('No se pudo generar la imagen.');return;}
+        const mime=format==='jpeg'?'image/jpeg':'image/png';
+        canvas.toBlob(file=>{
+          if(!file){alert('No se pudo generar la imagen.');return;}
           const link=document.createElement('a');
-          const pngUrl=URL.createObjectURL(png);
-          link.href=pngUrl;link.download='mapa-de-emociones-artevren.png';
-          document.body.appendChild(link);link.click();link.remove();
-          setTimeout(()=>URL.revokeObjectURL(pngUrl),1000);
-        },'image/png');
+          const fileUrl=URL.createObjectURL(file);
+          const extension=format==='jpeg'?'jpg':'png';
+          link.href=fileUrl;
+          link.download=`mapa-de-emociones-artevren.${extension}`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(()=>URL.revokeObjectURL(fileUrl),5000);
+        },mime,format==='jpeg'?0.94:undefined);
       };
-      image.onerror=()=>{URL.revokeObjectURL(url);alert('No se pudo preparar el PNG.');};
+      image.onerror=()=>{URL.revokeObjectURL(url);alert('No se pudo preparar la imagen.');};
       image.src=url;
-    });
+    }
+    document.querySelector('#download-png').addEventListener('click',()=>downloadMap('png'));
+    document.querySelector('#download-jpg').addEventListener('click',()=>downloadMap('jpeg'));
     drawGrid();drawShape();drawLabels();update();
   })();
   </script>
