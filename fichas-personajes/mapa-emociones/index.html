@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8faf7">
+  <title>Mapa de emociones | ARTEV TOOLS</title>
+  <style>
+    :root { --accent:#598d4f; --ink:#39473d; --muted:#647168; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#f8faf7; color:var(--ink); font-family:Arial,Helvetica,sans-serif; }
+    main { max-width:930px; margin:0 auto; padding:24px 12px 45px; }
+    h1 { margin:0; text-align:center; font-size:clamp(23px,4vw,32px); font-weight:700; letter-spacing:-.6px; }
+    .hint { text-align:center; color:var(--muted); font-size:14px; margin:10px 0 0; }
+    .chart-wrap { margin:0 auto; max-width:850px; }
+    svg { display:block; width:100%; height:auto; overflow:visible; user-select:none; -webkit-user-select:none; }
+    .controls { max-width:620px; display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:13px; margin:0 auto; }
+    .color-control { display:flex; align-items:center; gap:12px; border:1px solid #d4ddd4; padding:10px 14px; background:#fff; border-radius:13px; font-size:14px; font-weight:600; }
+    input[type=color] { border:0; width:40px; height:33px; padding:0; cursor:pointer; background:none; }
+    button { border:0; border-radius:13px; padding:15px 19px; background:#3a6d48; color:#fff; cursor:pointer; font-size:14px; font-weight:bold; }
+    button:hover { filter:brightness(1.08); }
+    button:focus-visible,input:focus-visible { outline:3px solid #6eaa7d; outline-offset:3px; }
+    .note { color:var(--muted); text-align:center; margin:13px 0 0; font-size:12px; }
+    @media (max-width:480px) { main { padding-top:20px; } .hint { font-size:12px; } .color-control { font-size:13px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Mapa de emociones</h1>
+    <p class="hint">Arrastra los puntos del gráfico para ajustar la intensidad de cada emoción.</p>
+    <div class="chart-wrap">
+      <svg id="chart" viewBox="0 0 1000 1010" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa interactivo de diez emociones, con valores de cero a cien">
+        <g id="grid"></g>
+        <g id="shape"></g>
+        <g id="scale"></g>
+        <g id="handles"></g>
+        <g id="labels"></g>
+        <text x="500" y="998" text-anchor="middle" font-size="20" font-family="Arial, Helvetica, sans-serif" fill="#607267" letter-spacing="1.1">@artev.ren</text>
+      </svg>
+    </div>
+    <div class="controls">
+      <label class="color-control" for="color">Color del gráfico <input id="color" type="color" value="#598d4f" aria-label="Elegir color del gráfico"></label>
+      <button id="download" type="button">Descargar mapa PNG</button>
+    </div>
+    <p class="note">También puedes seleccionar un punto y usar las flechas del teclado.</p>
+  </main>
+  <script>
+  (() => {
+    'use strict';
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.querySelector('#chart');
+    const grid = document.querySelector('#grid');
+    const shape = document.querySelector('#shape');
+    const scale = document.querySelector('#scale');
+    const handles = document.querySelector('#handles');
+    const labels = document.querySelector('#labels');
+    const picker = document.querySelector('#color');
+    const names = ['Alegría', 'Tristeza', 'Enojo', 'Miedo', 'Calma', 'Amor', 'Confianza', 'Curiosidad', 'Nostalgia', 'Esperanza'];
+    const values = [62,82,55,80,48,70,74,48,78,82];
+    const CX=500, CY=500, R=290;
+    let color = picker.value;
+    let dragging = null;
+    const angles = names.map((_, i) => (-90 + i * 36) * Math.PI / 180);
+    const iconPaths = [
+      '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>',
+      '<path d="M20 16.5A5 5 0 0 0 18 7h-1.3A7 7 0 0 0 3 9.2a4.5 4.5 0 0 0 3 8.3h11"/><path d="m8 19-1 3m5-3-1 3m5-3-1 3"/>',
+      '<path d="m9 3 2 5-5 2m9-7-2 5 5 2M3 15l5-2 2 5m11-3-5-2-2 5"/>',
+      '<path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5m0 3v.5"/>',
+      '<path d="M12 21c-5 0-8-3-8-8 3 0 6 1 8 4 2-3 5-4 8-4 0 5-3 8-8 8Z"/><path d="M12 17c-4-3-5-6-4-10 2 1 3 2 4 4 1-2 2-3 4-4 1 4 0 7-4 10Z"/>',
+      '<path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0l-1 1-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"/>',
+      '<path d="m2 11 5-5 4 2 3-1 8 6-4 5-3-1-2 2-3-1-2 1-6-6Z"/><path d="m8 13 5 4m-2-7 5 4"/>',
+      '<circle cx="10" cy="10" r="7"/><path d="m15.5 15.5 6 6"/>',
+      '<path d="M6 2h12M6 22h12M7 2c0 5 1 6 5 10-4 4-5 5-5 10m10-20c0 5-1 6-5 10 4 4 5 5 5 10"/>',
+      '<path d="M12 22V11m0 7c-4-1-7-4-7-8 4 0 7 1 7 5m0-6c0-4 3-6 7-6 0 5-3 8-7 9"/>'
+    ];
+    const positions = [
+      [500,92], [780,150], [908,325], [910,565], [773,814],
+      [500,899], [227,814], [90,565], [90,325], [220,150]
+    ];
+    function el(tag, attrs={}, parent) {
+      const node=document.createElementNS(NS,tag);
+      for (const [k,v] of Object.entries(attrs)) node.setAttribute(k,String(v));
+      if (parent) parent.appendChild(node);
+      return node;
+    }
+    function point(i,v=values[i]) {
+      const a=angles[i],r=R*v/100;
+      return [CX+Math.cos(a)*r,CY+Math.sin(a)*r];
+    }
+    function drawGrid() {
+      for(let n=1;n<=5;n++) {
+        el('circle',{cx:CX,cy:CY,r:R*n/5,fill:'none',stroke:'#77a477','stroke-width':'2','stroke-dasharray':'2 7','stroke-linecap':'round'},grid);
+      }
+      for(let i=0;i<10;i++){
+        const [x,y]=point(i,100);
+        el('line',{x1:CX,y1:CY,x2:x,y2:y,stroke:'#b8c4ba','stroke-width':'1.5'},grid);
+      }
+      for(let n=1;n<=5;n++){
+        const v=n*20;
+        el('text',{x:CX+12,y:CY-R*n/5+8,fill:'#465149','font-size':'23','font-family':'Arial, Helvetica, sans-serif','font-style':'italic'},scale).textContent=String(v);
+      }
+    }
+    let polygon;
+    const marks=[];
+    function drawShape() {
+      polygon=el('polygon',{'stroke-linejoin':'round','stroke-width':'3.5','fill-opacity':'0.26'},shape);
+      names.forEach((name,i)=>{
+        const g=el('g',{},handles);
+        const dot=el('circle',{r:8.5,stroke:'#fff','stroke-width':'1'},g);
+        const hit=el('circle',{r:25,fill:'transparent','data-hit':'1',role:'slider',tabindex:'0','aria-label':`${name}: ${values[i]} de 100`,'aria-valuemin':'0','aria-valuemax':'100','aria-valuenow':String(values[i]),'aria-orientation':'vertical',style:'cursor:grab;touch-action:none;'},g);
+        hit.addEventListener('pointerdown',e=>{
+          e.preventDefault(); dragging=i;
+          svg.setPointerCapture(e.pointerId);
+          moveTo(i,e);
+        });
+        hit.addEventListener('keydown',e=>{
+          const step=e.shiftKey?10:1;
+          if(e.key==='ArrowUp'||e.key==='ArrowRight'){values[i]=Math.min(100,values[i]+step);}
+          else if(e.key==='ArrowDown'||e.key==='ArrowLeft'){values[i]=Math.max(0,values[i]-step);}
+          else if(e.key==='Home'){values[i]=0;}
+          else if(e.key==='End'){values[i]=100;}
+          else return;
+          e.preventDefault(); update();
+        });
+        const title=el('title',{},g); title.textContent=`${name}: ${values[i]}/100`;
+        marks.push({dot,hit,title});
+      });
+    }
+    function drawLabels() {
+      names.forEach((name,i)=>{
+        const [x,y]=positions[i];
+        const icon=el('g',{transform:`translate(${x-21},${y-21}) scale(1.75)`,fill:'none',stroke:'#627d66','stroke-width':'1.7','stroke-linecap':'round','stroke-linejoin':'round'},labels);
+        icon.innerHTML=iconPaths[i];
+        el('text',{x,y:y+67,'text-anchor':'middle',fill:'#475149','font-size':'27','font-weight':'600','font-family':'Arial, Helvetica, sans-serif'},labels).textContent=name;
+      });
+    }
+    function update() {
+      polygon.setAttribute('points',values.map((v,i)=>point(i,v).join(',')).join(' '));
+      polygon.setAttribute('fill',color);
+      polygon.setAttribute('stroke',color);
+      marks.forEach((mark,i)=>{
+        const [x,y]=point(i);
+        for(const node of [mark.dot,mark.hit]){node.setAttribute('cx',x);node.setAttribute('cy',y);}
+        mark.dot.setAttribute('fill',color);
+        mark.hit.setAttribute('aria-valuenow',values[i]);
+        mark.hit.setAttribute('aria-valuetext',`${values[i]} de 100`);
+        mark.hit.setAttribute('aria-label',`${names[i]}: ${values[i]} de 100`);
+        mark.title.textContent=`${names[i]}: ${values[i]}/100`;
+      });
+    }
+    function moveTo(i,e) {
+      const matrix=svg.getScreenCTM(); if(!matrix)return;
+      const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse());
+      const a=angles[i];
+      const distance=(p.x-CX)*Math.cos(a)+(p.y-CY)*Math.sin(a);
+      values[i]=Math.round(Math.max(0,Math.min(100,distance/R*100)));
+      update();
+    }
+    svg.addEventListener('pointermove',e=>{if(dragging!==null)moveTo(dragging,e);});
+    for(const event of ['pointerup','pointercancel','lostpointercapture']){
+      svg.addEventListener(event,()=>{dragging=null;});
+    }
+    picker.addEventListener('input',e=>{color=e.target.value;update();});
+    document.querySelector('#download').addEventListener('click',()=>{
+      const copy=svg.cloneNode(true);
+      copy.querySelectorAll('[data-hit]').forEach(node=>node.remove());
+      copy.setAttribute('xmlns',NS);
+      copy.setAttribute('width','1000');copy.setAttribute('height','1010');
+      const xml=new XMLSerializer().serializeToString(copy);
+      const blob=new Blob([xml],{type:'image/svg+xml;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const image=new Image();
+      image.onload=()=>{
+        const canvas=document.createElement('canvas');
+        canvas.width=2000;canvas.height=2020;
+        canvas.getContext('2d').drawImage(image,0,0,2000,2020);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(png=>{
+          if(!png){alert('No se pudo generar la imagen.');return;}
+          const link=document.createElement('a');
+          const pngUrl=URL.createObjectURL(png);
+          link.href=pngUrl;link.download='mapa-de-emociones-artevren.png';
+          document.body.appendChild(link);link.click();link.remove();
+          setTimeout(()=>URL.revokeObjectURL(pngUrl),1000);
+        },'image/png');
+      };
+      image.onerror=()=>{URL.revokeObjectURL(url);alert('No se pudo preparar el PNG.');};
+      image.src=url;
+    });
+    drawGrid();drawShape();drawLabels();update();
+  })();
+  </script>
+</body>
+</html>
